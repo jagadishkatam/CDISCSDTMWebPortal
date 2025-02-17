@@ -6,9 +6,11 @@ library(tidyverse)
 library(bslib) 
 
 # UI
-ui <- fluidPage(
-  theme = bs_theme(bootswatch = "quartz" , version=5),
-  navbarPage(
+ui <- navbarPage(
+  theme = bs_theme(version = 5,
+                   bootswatch = "quartz", 
+                   primary = "#12a79d"),
+  
   "CDISC SDTM Web Portal",
 
   # First Tab - Data Viewer
@@ -72,7 +74,7 @@ ui <- fluidPage(
     )
   )
 )
-)
+
 
 
 # Server

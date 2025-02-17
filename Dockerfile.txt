@@ -1,0 +1,9 @@
+FROM rocker/shiny:4.2.1
+RUN install2.r rsconnect tibble tidyverse stringr htmltools lubridate bslib shiny DT httr2 jsonlite
+WORKDIR /home/CDISCSDTMWebPortal
+COPY app.R app.R 
+COPY ./data/endpoint_df.rds endpoint_df.rds
+COPY ./data/dataset_df.rds likes.rds
+COPY ./data/ct_codelist_df.rds likes.rds
+COPY deploy.R deploy.R
+CMD Rscript deploy.R
