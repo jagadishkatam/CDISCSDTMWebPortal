@@ -2,13 +2,12 @@ library(shiny)
 library(DT)
 library(httr2)
 library(jsonlite)
-library(dplyr)
-library(purrr)
+library(tidyverse)
 library(bslib) 
 
 # UI
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "quartz" ),
+  theme = bs_theme(bootswatch = "quartz" , version=5),
   navbarPage(
   "CDISC SDTM Web Portal",
 
@@ -78,6 +77,23 @@ ui <- fluidPage(
 
 # Server
 server <- function(input, output, session) {
+  
+  endpoint_df <- readRDS("./data/endpoint_df.rds") |> filter(product=='SDTM') |> 
+    mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[4]))
+  
+  # Initialize selectInput choices when app starts
+  observe({
+    updateSelectInput(session, "endpoint", choices = endpoint_df$end, selected = endpoint_df$end[1])
+  })
+  
+  ct_endpoint_df <- readRDS("./data/endpoint_df.rds") |> filter(product=='CT' & str_detect(endpoint,'sdtmct')) |> 
+    mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[5])) |> 
+    arrange(desc(end))
+  
+  observe({
+    updateSelectInput(session, "ctversion", choices = ct_endpoint_df$end, selected = ct_endpoint_df$end[1])
+  })
+  
   # Reactive URL construction
   url_reactive <- reactive({
     req(input$product, input$endpoint) # Ensure both values are selected
