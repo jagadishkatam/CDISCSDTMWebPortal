@@ -10,10 +10,11 @@ options(shiny.maxRequestSize = 10 * 1024^2)
 
 # UI
 ui <- navbarPage(
-  theme = bs_theme(version = 5,
-                   bootswatch = "quartz",
-                   primary = "#12a79d"),
-  
+  theme = bs_theme(
+    version = 5,
+    bootswatch = "quartz",
+    primary = "#12a79d"
+  ),
   "CDISC SDTM-IG Web Portal",
 
   # First Tab - Data Viewer
@@ -33,7 +34,7 @@ ui <- navbarPage(
         # actionButton("submit_btn", "Submit")
       ),
       mainPanel(
-        uiOutput("version_header"),  # Placeholder for dynamic h3()
+        uiOutput("version_header"), # Placeholder for dynamic h3()
         withSpinner(DTOutput("table"))
       )
     )
@@ -66,15 +67,14 @@ ui <- navbarPage(
             ),
             column(
               3,
-              
               actionButton("clear_btn", "Clear"),
             )
           ),
           fluidRow(
             column(
-              12, 
+              12,
               br(),
-              uiOutput("version_ct_header"),  
+              uiOutput("version_ct_header"),
               withSpinner(DTOutput("ct_table"))
             )
           )
@@ -88,44 +88,46 @@ ui <- navbarPage(
 
 # Server
 server <- function(input, output, session) {
-  
-  endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(toupper(product)=='SDTMIG') |> 
-    mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[4]))
-  
+  endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
+    filter(toupper(product) == "SDTMIG") |>
+    mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[4]))
+
+
   # Initialize selectInput choices when app starts
   observe({
     updateSelectInput(session, "endpoint", choices = endpoint_df$end, selected = endpoint_df$end[1])
   })
-  
-  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(toupper(product)=='CT' & str_detect(endpoint,'sdtmct')) |> 
-    mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[5])) |> 
+
+  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
+    filter(toupper(product) == "CT" & str_detect(endpoint, "sdtmct")) |>
+    mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[5])) |>
     arrange(desc(end))
-  
+
   observe({
     updateSelectInput(session, "ctversion", choices = ct_endpoint_df$end, selected = ct_endpoint_df$end[1])
   })
-  
+
   # Reactive version value
-  selected_version <- reactiveVal(paste0('v',str_replace_all(endpoint_df$end[1],'-','.')))  # Default
-  
+  selected_version <- reactiveVal(paste0("v", str_replace_all(endpoint_df$end[1], "-", "."))) # Default
+
   # Update the selected version when the button is clicked
   observeEvent(input$submit_btn, {
-    selected_version(paste0('v',str_replace_all(input$endpoint,'-','.')))
+    selected_version(paste0("v", str_replace_all(input$endpoint, "-", ".")))
   })
-  
+
   # Render the dynamic h3() text
   output$version_header <- renderUI({
     h3("SDTM Implementation Guide", selected_version())
   })
-  
+
   # Reactive URL construction
   url_reactive <- reactive({
     req(input$product, input$endpoint) # Ensure both values are selected
     paste("https://api.library.cdisc.org/api/mdr", input$product, input$endpoint, sep = "/")
   }) |>
     bindEvent(input$submit_btn)
-  
-  
+
+
   # dataset_df <- readRDS("./data/dataset_df.rds")
 
   # Store dataset in a reactive value
@@ -150,51 +152,50 @@ server <- function(input, output, session) {
 
     # Check if response is successful
     if (resp_status(resp) == 200) {
-    # if (resp == 200) {
+      # if (resp == 200) {
       # Parse JSON response
       json_list <- resp %>% resp_body_json()
 
 
-    
 
-# Convert list of lists into a data frame
-dataset_df <- map_dfr(1:length(json_list$classes), function(i) {
-  class_data <- json_list$classes[[i]]
 
-  map_dfr(1:length(class_data$datasets), function(j) {
-    dataset <- class_data$datasets[[j]]
+      # Convert list of lists into a data frame
+      dataset_df <- map_dfr(1:length(json_list$classes), function(i) {
+        class_data <- json_list$classes[[i]]
 
-    if (is.null(dataset$datasetVariables)) {
-      return(NULL)  # Skip datasets with no variables
-    }
+        map_dfr(1:length(class_data$datasets), function(j) {
+          dataset <- class_data$datasets[[j]]
 
-    # Extract dataset variables
-    variable_df <- map_dfr(1:length(dataset$datasetVariables), function(x) {
-      var <- dataset$datasetVariables[[x]]
+          if (is.null(dataset$datasetVariables)) {
+            return(NULL) # Skip datasets with no variables
+          }
 
-      # Extract codelist href if available, otherwise NA
-      href_value <- if (!is.null(var$`_links`$codelist) && length(var$`_links`$codelist) > 0) {
-        var$`_links`$codelist[[1]]$href %||% NA
-      } else {
-        NA
-      }
+          # Extract dataset variables
+          variable_df <- map_dfr(1:length(dataset$datasetVariables), function(x) {
+            var <- dataset$datasetVariables[[x]]
 
-      data.frame(
-        dataset = dataset$name,
-        Ordinal = as.numeric(var$ordinal) %||% NA,
-        Name = var$name %||% NA,
-        Label = var$label %||% NA,
-        Description = var$description %||% NA,
-        Datatype = var$simpleDatatype %||% NA,
-        Role = var$role %||% NA,
-        core = var$core %||% NA,
-        Codelist = stringr::str_extract(href_value,'C\\d+$'),
-        stringsAsFactors = FALSE
-      )
-    })
+            # Extract codelist href if available, otherwise NA
+            href_value <- if (!is.null(var$`_links`$codelist) && length(var$`_links`$codelist) > 0) {
+              var$`_links`$codelist[[1]]$href %||% NA
+            } else {
+              NA
+            }
 
-  })
-}) |> arrange(dataset,Ordinal)
+            data.frame(
+              dataset = dataset$name,
+              Ordinal = as.numeric(var$ordinal) %||% NA,
+              Name = var$name %||% NA,
+              Label = var$label %||% NA,
+              Description = var$description %||% NA,
+              Datatype = var$simpleDatatype %||% NA,
+              Role = var$role %||% NA,
+              core = var$core %||% NA,
+              Codelist = stringr::str_extract(href_value, "C\\d+$"),
+              stringsAsFactors = FALSE
+            )
+          })
+        })
+      }) |> arrange(dataset, Ordinal)
 
       dataset_df_reactive(dataset_df)
 
@@ -214,106 +215,105 @@ dataset_df <- map_dfr(1:length(json_list$classes), function(i) {
 
   # Render DataTable for Data Viewer
   output$table <- renderDT({
-    
-    
-    datatable(filtered_data(),filter = 'top', options = list(pageLength = 5, autoWidth = FALSE),
-              style = "bootstrap",
-              escape = FALSE, 
-              selection = "none", 
-              rownames = FALSE)
+    datatable(filtered_data(),
+      filter = "top", options = list(pageLength = 5, autoWidth = FALSE),
+      style = "bootstrap",
+      escape = FALSE,
+      selection = "none",
+      rownames = FALSE
+    )
   })
 
 
 
-  selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1],'\\d{4}-\\d{2}-\\d{2}')),"%d-%b-%Y"))
-  
+  selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1], "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
+
   observeEvent(input$submit_ctversion, {
-    selected_ct_version <- format(as.Date(str_extract(input$ctversion,'\\d{4}-\\d{2}-\\d{2}')),"%d-%b-%Y")
+    selected_ct_version <- format(as.Date(str_extract(input$ctversion, "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y")
   })
 
   output$version_ct_header <- renderUI({
     h3("SDTM Controlled Terminology as on ", selected_ct_version())
   })
 
-# Reactive URL construction
-ct_url_reactive <- reactive({
-  req(input$ctversion)  # Ensure both values are selected
-  paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$ctversion, sep = '/')
-  print(paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$ctversion, sep = '/'))
-}) |>
-  bindEvent(input$submit_ctversion)
+  # Reactive URL construction
+  ct_url_reactive <- reactive({
+    req(input$ctversion) # Ensure both values are selected
+    paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$ctversion, sep = "/")
+    print(paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$ctversion, sep = "/"))
+  }) |>
+    bindEvent(input$submit_ctversion)
 
-# Store dataset in a reactive value
-ct_react_filtered_data <- reactiveVal(NULL)  # Initialize as NULL
+  # Store dataset in a reactive value
+  ct_react_filtered_data <- reactiveVal(NULL) # Initialize as NULL
 
-# Observe when both inputs change and fetch data
-observeEvent(ct_url_reactive(), {
-  req(ct_url_reactive())  # Ensure URL is not NULL
+  # Observe when both inputs change and fetch data
+  observeEvent(ct_url_reactive(), {
+    req(ct_url_reactive()) # Ensure URL is not NULL
 
-  # Construct the API request
-  ctreq <- request(ct_url_reactive()) %>%
-    req_headers(
-      'Cache-Control' = 'no-cache',
-      'api-key' = 'ba3d68879a224d8090406948f8155bae',
-      'content-type' = 'application/json'
-    )
-
-  # Send the request and fetch response
-  ctresp <- ctreq %>% req_perform()
-
-  # Check if response is successful
-  if (resp_status(ctresp) == 200) {
-    # Parse JSON response
-    ct_list <- ctresp %>% resp_body_json()
-
-
-    # Get length of codelists
-    codelist_count <- length(ct_list$codelists)
-
-    # Convert all nested lists into a data frame
-    ct_codelist_df <- map_dfr(1:codelist_count, function(i) {
-
-      # Extract current codelist
-      ctcodelist <- ct_list$codelists[[i]]
-
-      # Extract codelist-level details
-      ct_codelist_info <- data.frame(
-        codelist = ctcodelist$conceptId %||% NA,
-        definition = ctcodelist$definition %||% NA,
-        extensible = ctcodelist$extensible %||% NA,
-        name = ctcodelist$name %||% NA,
-        nci_preferred_Term = ctcodelist$preferredTerm %||% NA,
-        submission_Value = ctcodelist$submissionValue %||% NA,
-        stringsAsFactors = FALSE
+    # Construct the API request
+    ctreq <- request(ct_url_reactive()) %>%
+      req_headers(
+        "Cache-Control" = "no-cache",
+        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "content-type" = "application/json"
       )
 
-      # Get length of terms
-      terms_count <- length(ctcodelist$terms)
+    # Send the request and fetch response
+    ctresp <- ctreq %>% req_perform()
 
-      # Extract term-level details (if available)
-      terms_df <- map_dfr(1:terms_count, function(j) {
-        term <- ctcodelist$terms[[j]]
-        data.frame(
-          term = term$conceptId %||% NA,
-          term_definition = term$definition %||% NA,
-          term_nci_preferred_Term = term$preferredTerm %||% NA,
-          term_submission_Value = term$submissionValue %||% NA,
+    # Check if response is successful
+    if (resp_status(ctresp) == 200) {
+      # Parse JSON response
+      ct_list <- ctresp %>% resp_body_json()
+
+
+      # Get length of codelists
+      codelist_count <- length(ct_list$codelists)
+
+      # Convert all nested lists into a data frame
+      ct_codelist_df <- map_dfr(1:codelist_count, function(i) {
+        # Extract current codelist
+        ctcodelist <- ct_list$codelists[[i]]
+
+        # Extract codelist-level details
+        ct_codelist_info <- data.frame(
+          codelist = ctcodelist$conceptId %||% NA,
+          definition = ctcodelist$definition %||% NA,
+          extensible = ctcodelist$extensible %||% NA,
+          name = ctcodelist$name %||% NA,
+          nci_preferred_Term = ctcodelist$preferredTerm %||% NA,
+          submission_Value = ctcodelist$submissionValue %||% NA,
           stringsAsFactors = FALSE
         )
+
+        # Get length of terms
+        terms_count <- length(ctcodelist$terms)
+
+        # Extract term-level details (if available)
+        terms_df <- map_dfr(1:terms_count, function(j) {
+          term <- ctcodelist$terms[[j]]
+          data.frame(
+            term = term$conceptId %||% NA,
+            term_definition = term$definition %||% NA,
+            term_nci_preferred_Term = term$preferredTerm %||% NA,
+            term_submission_Value = term$submissionValue %||% NA,
+            stringsAsFactors = FALSE
+          )
+        })
+
+        # Merge codelist details with terms (repeat codelist info for each term)
+        bind_cols(ct_codelist_info, terms_df)
       })
 
-      # Merge codelist details with terms (repeat codelist info for each term)
-      bind_cols(ct_codelist_info, terms_df)
-    })
+      ct_react_filtered_data(ct_codelist_df)
 
-    ct_react_filtered_data(ct_codelist_df)
-
-    #print(json_list)  # Debugging: Print API response
-  } else {
-    print(paste("API request failed with status:", resp_status(ctresp)))
-    ct_react_filtered_data(NULL)  # Reset the dataset on failure
-  }
-})
+      # print(json_list)  # Debugging: Print API response
+    } else {
+      print(paste("API request failed with status:", resp_status(ctresp)))
+      ct_react_filtered_data(NULL) # Reset the dataset on failure
+    }
+  })
 
 
 
@@ -327,7 +327,7 @@ observeEvent(ct_url_reactive(), {
   # Render the DataTable (shows either full or filtered data)
   output$ct_table <- renderDT({
     req(ct_react_filtered_data()) # Ensure we have data before rendering
-    datatable(ct_react_filtered_data(), filter = 'top', options = list(pageLength = 5, autoWidth = FALSE))
+    datatable(ct_react_filtered_data(), filter = "top", options = list(pageLength = 5, autoWidth = FALSE))
   })
 
   # Apply filter when the Apply Filter button is clicked
