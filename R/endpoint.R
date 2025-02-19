@@ -30,17 +30,17 @@ endpoint_df <- map_dfr(1:length(endpoint$`_links`), \(x) {
   })
 })
 
-endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
-  if (is.list(x) && "href" %in% names(x)) {
-    tibble(
-      endpoint = x$href,
-      type = x$type,
-      title = x$title
-    )
-  } else {
-    tibble(endw = as.character(x))
-  }
-}) |> filter(!is.na(endpoint))
+                                          endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
+                                            if (is.list(x) && "href" %in% names(x)) {
+                                              tibble(
+                                                endpoint = x$href,
+                                                type = x$type,
+                                                title = x$title
+                                              )
+                                            } else {
+                                              tibble(endw = as.character(x))
+                                            }
+                                          }) |> filter(!is.na(endpoint))
 
 endpoint_df_links$product <- sapply(strsplit(endpoint_df_links$endpoint, "/"), \(x) x[3])
 
