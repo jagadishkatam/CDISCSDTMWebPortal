@@ -33,6 +33,7 @@ ui <- navbarPage(
         # actionButton("submit_btn", "Submit")
       ),
       mainPanel(
+        uiOutput("version_header"),  # Placeholder for dynamic h3()
         withSpinner(DTOutput("table"))
       )
     )
@@ -71,7 +72,9 @@ ui <- navbarPage(
           ),
           fluidRow(
             column(
-              12,
+              12, 
+              br(),
+              uiOutput("version_ct_header"),  
               withSpinner(DTOutput("ct_table"))
             )
           )
@@ -86,7 +89,7 @@ ui <- navbarPage(
 # Server
 server <- function(input, output, session) {
   
-  endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(product=='SDTM') |> 
+  endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(toupper(product)=='SDTMIG') |> 
     mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[4]))
   
   # Initialize selectInput choices when app starts
@@ -94,12 +97,25 @@ server <- function(input, output, session) {
     updateSelectInput(session, "endpoint", choices = endpoint_df$end, selected = endpoint_df$end[1])
   })
   
-  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(product=='CT' & str_detect(endpoint,'sdtmct')) |> 
+  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |> filter(toupper(product)=='CT' & str_detect(endpoint,'sdtmct')) |> 
     mutate(end=sapply(strsplit(.data[['endpoint']],'/'), \(x) x[5])) |> 
     arrange(desc(end))
   
   observe({
     updateSelectInput(session, "ctversion", choices = ct_endpoint_df$end, selected = ct_endpoint_df$end[1])
+  })
+  
+  # Reactive version value
+  selected_version <- reactiveVal(paste0('v',str_replace_all(endpoint_df$end[1],'-','.')))  # Default
+  
+  # Update the selected version when the button is clicked
+  observeEvent(input$submit_btn, {
+    selected_version(paste0('v',str_replace_all(input$endpoint,'-','.')))
+  })
+  
+  # Render the dynamic h3() text
+  output$version_header <- renderUI({
+    h3("SDTM Implementation Guide", selected_version())
   })
   
   # Reactive URL construction
@@ -209,7 +225,15 @@ dataset_df <- map_dfr(1:length(json_list$classes), function(i) {
 
 
 
+  selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1],'\\d{4}-\\d{2}-\\d{2}')),"%d-%b-%Y"))
+  
+  observeEvent(input$submit_ctversion, {
+    selected_ct_version <- format(as.Date(str_extract(input$ctversion,'\\d{4}-\\d{2}-\\d{2}')),"%d-%b-%Y")
+  })
 
+  output$version_ct_header <- renderUI({
+    h3("SDTM Controlled Terminology as on ", selected_ct_version())
+  })
 
 # Reactive URL construction
 ct_url_reactive <- reactive({
