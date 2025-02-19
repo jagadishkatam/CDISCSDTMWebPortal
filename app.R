@@ -229,7 +229,7 @@ server <- function(input, output, session) {
   selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1], "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
 
   observeEvent(input$submit_ctversion, {
-    selected_ct_version <- format(as.Date(str_extract(input$ctversion, "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y")
+    selected_ct_version(format(as.Date(str_extract(input$ctversion, "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
   })
 
   output$version_ct_header <- renderUI({
