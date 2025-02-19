@@ -10,9 +10,9 @@ url <- "https://api.library.cdisc.org/api/mdr/products"
 # Construct the request
 req <- request(url) %>%
   req_headers(
-    'Cache-Control' = 'no-cache',
-    'api-key' = 'ba3d68879a224d8090406948f8155bae',
-    'content-type' = 'application/json'
+    "Cache-Control" = "no-cache",
+    "api-key" = "ba3d68879a224d8090406948f8155bae",
+    "content-type" = "application/json"
   )
 
 # Send the request and fetch response
@@ -32,11 +32,13 @@ endpoint_df <- map_dfr(1:length(endpoint$`_links`), \(x) {
 
 endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
   if (is.list(x) && "href" %in% names(x)) {
-    tibble(endpoint=x$href,
-           type=x$type,
-           title=x$title)
+    tibble(
+      endpoint = x$href,
+      type = x$type,
+      title = x$title
+    )
   } else {
-    tibble(endw=as.character(x))
+    tibble(endw = as.character(x))
   }
 }) |> filter(!is.na(endpoint))
 
@@ -44,5 +46,3 @@ endpoint_df_links$product <- sapply(strsplit(endpoint_df_links$endpoint,'/'),\(x
 
 saveRDS(endpoint_df_links, './data/endpoint_df_links.rds')
 
-
-as.Date(str_extract(ct_endpoint_df$end[1],'\\d{4}-\\d{2}-\\d{2}'))
