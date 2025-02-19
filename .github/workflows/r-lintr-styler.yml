@@ -50,5 +50,5 @@ jobs:
           git pull origin main
           git add .
           git commit -m "Auto-format R code using styler" || echo "No changes to commit"
-          git push origin main
+          git push origin gh-pages
 
