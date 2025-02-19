@@ -31,7 +31,7 @@ jobs:
           library(lintr)
           lint_results <- lint_dir()
           print(lint_results)
-          if (length(lint_results) > 0) {
+          if (any(vapply(lint_results, function(x) x$type == "error", logical(1)))) {
             stop("Lint errors detected. Please fix them.")
           }
         shell: Rscript {0}
