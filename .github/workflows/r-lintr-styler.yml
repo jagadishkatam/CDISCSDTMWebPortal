@@ -1,14 +1,9 @@
 name: R Lint and Style Check
 
 on:
-  push:
-    branches:
-      - main
-      - gh-pages
   pull_request:
     branches:
       - main
-      - gh-pages
 
 jobs:
   lint-style-check:
