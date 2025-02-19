@@ -11,7 +11,7 @@ options(shiny.maxRequestSize = 10 * 1024^2)
 # UI
 ui <- navbarPage(
   theme = bs_theme(version = 5,
-                   bootswatch = "quartz", 
+                   bootswatch = "quartz",
                    primary = "#12a79d"),
   
   "CDISC SDTM-IG Web Portal",

@@ -45,4 +45,3 @@ endpoint_df_links$product <- sapply(strsplit(endpoint_df_links$endpoint,'/'),\(x
 saveRDS(endpoint_df_links, './data/endpoint_df_links.rds')
 
 
-as.Date(str_extract(ct_endpoint_df$end[1],'\\d{4}-\\d{2}-\\d{2}'))
