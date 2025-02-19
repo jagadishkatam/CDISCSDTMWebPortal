@@ -23,7 +23,11 @@ endpoint <- resp %>% resp_body_json()
 
 
 endpoint_df <- map_dfr(1:length(endpoint$`_links`), \(x) {
-  tibble(link = endpoint$`_links`[[x]]$`_links`[[1]])
+  map_dfr(names(endpoint$`_links`[[x]]$`_links`), \(y){
+    if (y %in% c("adam", "sdtmig", "packages")) {
+      tibble(link = endpoint$`_links`[[x]]$`_links`[[y]])
+    }
+  })
 })
 
 endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
@@ -36,9 +40,7 @@ endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
   } else {
     tibble(endw = as.character(x))
   }
-}) |>
-  filter(!is.na(endpoint)) |>
-  select(-endw)
+}) |> filter(!is.na(endpoint))
 
 endpoint_df_links$product <- sapply(strsplit(endpoint_df_links$endpoint, "/"), \(x) x[3])
 

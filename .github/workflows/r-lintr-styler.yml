@@ -46,7 +46,9 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
+          git fetch --all
+          git checkout "${{ github.head_ref }}"
           git add .
           git commit -m "Auto-format R code using styler" || echo "No changes to commit"
-          git push
+          git push origin "${{ github.head_ref }}"
 
