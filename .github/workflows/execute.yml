@@ -39,7 +39,7 @@ jobs:
           
     - name: Run R script
       run: |
-        Rscript ./data/endpoint.R  # Run the R script located in the root directory
+        Rscript ./R/endpoint.R  # Run the R script located in the root directory
     - name: Commit results
       run: |
         git config --local user.email "actions@github.com"
