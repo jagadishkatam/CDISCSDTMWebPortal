@@ -2,7 +2,7 @@ name: Run R Script on Schedule
 
 on:
   schedule:
-    - cron: '45 04 * * *'
+    - cron: '15 05 * * *'
     # This schedules the job to run daily at midnight UTC
     
     
@@ -30,7 +30,7 @@ jobs:
       with:
         packages: |
           any::tidyverse 
-          any::httr
+          any::DT
           any::shiny
           any::shinylive
           any::glue
