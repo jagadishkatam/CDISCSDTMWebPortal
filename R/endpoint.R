@@ -44,5 +44,4 @@ endpoint_df_links <- map_dfr(endpoint_df$link, \(x) {
 
 endpoint_df_links$product <- sapply(strsplit(endpoint_df_links$endpoint, "/"), \(x) x[3])
 
-saveRDS(endpoint_df_links, './data/endpoint_df_links.rds')
-
+saveRDS(endpoint_df_links, "./data/endpoint_df_links.rds")
