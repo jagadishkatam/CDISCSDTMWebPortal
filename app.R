@@ -35,6 +35,7 @@ ui <- navbarPage(
       ),
       mainPanel(
         uiOutput("version_header"), # Placeholder for dynamic h3()
+        uiOutput("listofdf"),
         withSpinner(DTOutput("table"))
       )
     )
@@ -45,9 +46,8 @@ ui <- navbarPage(
     "Controlled Terminology",
     sidebarLayout(
       sidebarPanel(
-        h4("Terminology Reference"),
-        helpText("This section provides controlled terminologies used in the dataset."),
-        selectInput("ctversion", "Select Product:",
+        h4("Controlled Terminology Version"),
+        selectInput("ctversion", "Select Version:",
           choices = "sdtmct-2024-09-27",
           selected = "sdtmct-2024-09-27"
         ),
@@ -75,6 +75,7 @@ ui <- navbarPage(
               12,
               br(),
               uiOutput("version_ct_header"),
+              
               withSpinner(DTOutput("ct_table"))
             )
           )
@@ -115,9 +116,16 @@ server <- function(input, output, session) {
     selected_version(paste0("v", str_replace_all(input$endpoint, "-", ".")))
   })
 
-  # Render the dynamic h3() text
+  
   output$version_header <- renderUI({
-    h3("SDTM Implementation Guide", selected_version())
+    # Check if the submit button has been clicked
+    if (is.null(input$submit_btn) || input$submit_btn == 0) {
+      # Initially, display the header without version info
+      h3("SDTM Implementation Guide")
+    } else {
+      # After the button is clicked, display the header with the version
+      h3("SDTM Implementation Guide", selected_version())
+    }
   })
 
   # Reactive URL construction
@@ -198,7 +206,7 @@ server <- function(input, output, session) {
       }) |> arrange(dataset, Ordinal)
 
       dataset_df_reactive(dataset_df)
-
+      
       # print(json_list)  # Debugging: Print API response
     } else {
       print(paste("API request failed with status:", resp_status(resp)))
@@ -206,6 +214,18 @@ server <- function(input, output, session) {
     }
   })
 
+  datasetslist <- reactiveVal(NULL)
+  
+  observeEvent(input$submit_btn,{
+    datasetslist(dataset_df_reactive() |> distinct(dataset) |> pull())
+  })
+  
+  output$listofdf <- renderUI({
+    req(dataset_df_reactive())
+    dataset_string <- paste(datasetslist(), collapse = ", ")
+    h5("List of Datasets:", dataset_string)
+  })
+  
 
   # Reactive filtered data based on selections
   filtered_data <- reactive({
@@ -233,9 +253,14 @@ server <- function(input, output, session) {
   })
 
   output$version_ct_header <- renderUI({
+    if(is.null(input$submit_ctversion) || input$submit_ctversion==0){
+      h3("SDTM Controlled Terminology")
+    } else {
     h3("SDTM Controlled Terminology as on ", selected_ct_version())
+    }
   })
 
+  
   # Reactive URL construction
   ct_url_reactive <- reactive({
     req(input$ctversion) # Ensure both values are selected
@@ -305,7 +330,9 @@ server <- function(input, output, session) {
         # Merge codelist details with terms (repeat codelist info for each term)
         bind_cols(ct_codelist_info, terms_df)
       })
-
+            
+      ct_codelist_df <<- ct_codelist_df
+      
       ct_react_filtered_data(ct_codelist_df)
 
       # print(json_list)  # Debugging: Print API response
@@ -333,7 +360,7 @@ server <- function(input, output, session) {
   # Apply filter when the Apply Filter button is clicked
   observeEvent(input$apply_filter, {
     req(input$filter_val) # Ensure filter input is available
-
+    
     if (!is.null(input$filter_val) && input$filter_val != "") {
       tryCatch(
         {
@@ -353,13 +380,13 @@ server <- function(input, output, session) {
           showNotification("Invalid filter expression", type = "error")
         }
       )
-    }
+    } 
   })
 
   # Clear filter button functionality
   observeEvent(input$clear_btn, {
     updateTextInput(session, "filter_val", value = "") # Reset filter input
-    ct_react_filtered_data() # Reset to original data
+    ct_react_filtered_data(ct_codelist_df) # Reset to original data
   })
 }
 
