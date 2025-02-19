@@ -46,8 +46,9 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
+          git checkout gh-pages  # Change 'main' to your actual branch name
+          git pull origin main
           git add .
           git commit -m "Auto-format R code using styler" || echo "No changes to commit"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin main
+
