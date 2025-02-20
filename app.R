@@ -249,15 +249,19 @@ server <- function(input, output, session) {
 
   # Render DataTable for Data Viewer
   output$table <- renderDT({
-    datatable(filtered_data(),
-      filter = "top", options = list(pageLength = 5, autoWidth = FALSE),
-      style = "bootstrap",
-      escape = FALSE,
-      selection = "none",
-      rownames = FALSE
-    )
-  })
 
+    datatable(
+      filtered_data(),
+      filter = "top",
+      options = list(
+        pageLength = 10,
+        scrollY = 300,
+        deferRender= TRUE,
+        scrollCollapse = TRUE
+      )
+    )
+    
+  })
 
 
   selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1], "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
@@ -368,7 +372,17 @@ server <- function(input, output, session) {
   # Render the DataTable (shows either full or filtered data)
   output$ct_table <- renderDT({
     req(ct_react_filtered_data()) # Ensure we have data before rendering
-    datatable(ct_react_filtered_data(), filter = "top", options = list(pageLength = 5, autoWidth = FALSE))
+    datatable(
+      ct_react_filtered_data(),
+      filter = "top",
+      options = list(
+        pageLength = 10,
+        scrollY = 300,
+        deferRender= TRUE,
+        scrollCollapse = TRUE
+      )
+    )
+    
   })
 
   # Apply filter when the Apply Filter button is clicked
