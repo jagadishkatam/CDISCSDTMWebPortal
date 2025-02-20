@@ -9,96 +9,97 @@ library(shinycssloaders)
 options(shiny.maxRequestSize = 10 * 1024^2)
 
 # UI
-ui <- navbarPage(
-  theme = bs_theme(
-    version = 5,
-    bootswatch = "quartz",
-    primary = "#12a79d"
-  ),
-  "CDISC SDTM-IG Web Portal",
-
-  # First Tab - Data Viewer
-  tabPanel(
-    "Domains",
-        fluidRow(
-          column(
-            2,
-            selectInput("product", "Select Product:", choices = "sdtmig", selected = "sdtmig")
-            ),
-          column(
-            2,
-            selectInput("endpoint", "Select Version:", choices = c("3-4"), selected = c("3-4")),
-          ),
-          column(
-            2, br(),
-            tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit")),
+ui <- tagList(
+  # The main app content wrapped in navbarPage:
+  navbarPage(
+    theme = bs_theme(
+      version = 5,
+      bootswatch = "quartz",
+      primary = "#12a79d"
+    ),
+    "CDISC SDTM-IG Web Portal",
+    
+    # First Tab - Data Viewer
+    tabPanel(
+      "Domains",
+      fluidRow(
+        column(
+          2,
+          selectInput("product", "Select Product:", choices = "sdtmig", selected = "sdtmig")
+        ),
+        column(
+          2,
+          selectInput("endpoint", "Select Version:", choices = c("3-4"), selected = c("3-4"))
+        ),
+        column(
+          2, 
+          br(),
+          tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit"))
+        )
+      ),
+      fluidRow(
+        column(12, uiOutput("version_header"))
+      ),
+      fluidRow(
+        column(12, uiOutput("listofdf"))
+      ),
+      fluidRow(
+        # Wrap the table output in a div with bottom margin to avoid overlap with footer
+        div(
+          style = "margin-bottom: 50px;",  
+          withSpinner(DTOutput("table"))
+        )
+      )
+    ),
+    
+    # Second Tab - Controlled Terminology
+    tabPanel(
+      "Controlled Terminology",
+      fluidRow(
+        column(
+          2,
+          selectInput("ctversion", "Select CT Version:", choices = "sdtmct-2024-09-27", selected = "sdtmct-2024-09-27")
+        ),
+        column(
+          2,
+          br(),
+          tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit"))
+        )
+      ),
+      fluidRow(
+        column(
+          6,
+          textInput("filter_val", 
+                    tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')", 
+                              style = "font-size: 12px; font-weight: bold; color: orange;")
           )
-          ),
-        fluidRow(column(12,
-        uiOutput("version_header"), # Placeholder for dynamic h3()
-        )),
-        fluidRow(column(12,
-        uiOutput("listofdf"),
-        )),
-        fluidRow(column(12,
-                        div(
-                          style = "margin-bottom: 90px;", 
-        withSpinner(DTOutput("table")),
-        # Footer fixed at the bottom
-        tags$footer(
-          "Developed by Jagadish Katam",
-          style = "position: fixed; bottom: 0; width: 100%;color: white;
-             padding: 1px; text-align: center; border-top: 1px solid #e7e7e7;"
         )
-        )
-        )
-  )),
-
-  # Second Tab - Controlled Terminology
-  tabPanel(
-    "Controlled Terminology",
-        fluidRow(
-          column(
-            2,
-            selectInput("ctversion", "Select CT Version:", choices = "sdtmct-2024-09-27", selected = "sdtmct-2024-09-27")),
-            column(
-              2, br(),
-            tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit")))),
-            fluidRow(
-              column(6,
-            textInput("filter_val", tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')", style = "font-size: 12px; font-weight: bold; color: orange;")),
-          )),
-          fluidRow(
-            column(
-              2,
-              actionButton("apply_filter", "Apply Filter")
-            ),
-            column(
-              1,
-              actionButton("clear_btn", "Clear"),
-            )
-          ),
-          fluidRow(
-            column(
-              12,
-              br(),
-              uiOutput("version_ct_header"),
-              div(
-                style = "margin-bottom: 90px;",  
-              withSpinner(DTOutput("ct_table")),
-              # Footer fixed at the bottom
-              tags$footer(
-                "Developed by Jagadish Katam",
-                style = "position: fixed; bottom: 0; width: 100%;color: white;
-             padding: 1px; text-align: center; border-top: 1px solid #e7e7e7;"
-              )
-            )
+      ),
+      fluidRow(
+        column(2, actionButton("apply_filter", "Apply Filter")),
+        column(1, actionButton("clear_btn", "Clear"))
+      ),
+      fluidRow(
+        column(
+          12,
+          br(),
+          uiOutput("version_ct_header"),
+          # Add margin-bottom to avoid footer overlap
+          div(
+            style = "margin-bottom: 50px;",
+            withSpinner(DTOutput("ct_table"))
           )
         )
       )
+    )
+  ),
+  
+  # Fixed footer placed outside the navbarPage
+  tags$footer(
+    "Developed by Jagadish Katam",
+    style = "position: fixed; bottom: 0; width: 100%; color: white; padding: 1px; text-align: right; border-top: 1px solid #e7e7e7;"
+  )
 )
-
-
 
 # Server
 server <- function(input, output, session) {
