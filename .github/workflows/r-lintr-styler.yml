@@ -1,50 +1,51 @@
-name: R Lint and Style Check
+name: R Lint and Style Check for gh-pages PR
 
 on:
   pull_request:
+    # Trigger when a pull request is opened or updated targeting main
     branches:
       - main
-      - gh-pages
+
+    # (Optionally, you could restrict to certain PR types, e.g., opened, synchronize)
+    types: [opened, synchronize]
 
 jobs:
   lint-style-check:
     runs-on: ubuntu-latest
+    # Run this job only when the head branch is "gh-pages"
+    if: ${{ github.head_ref == 'gh-pages' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Ensure we check out the head branch (gh-pages)
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
       - name: Install dependencies
         run: |
-          install.packages(c("lintr", "styler"))
-        shell: Rscript {0}
+          Rscript -e 'install.packages(c("lintr", "styler"), repos="https://cloud.r-project.org")'
 
       - name: Run lintr
         run: |
-          library(lintr)
-          lint_results <- lint_dir()
-          print(lint_results)
-          if (any(vapply(lint_results, function(x) x$type == "error", logical(1)))) {
-            stop("Lint errors detected. Please fix them.")
-          }
-        shell: Rscript {0}
+          Rscript -e "library(lintr); lint_results <- lint_dir(); print(lint_results); if (any(vapply(lint_results, function(x) x\$type == 'error', logical(1)))) { stop('Lint errors detected. Please fix them.') }"
+        shell: bash
 
       - name: Run styler
         run: |
-          library(styler)
-          style_dir()
-        shell: Rscript {0}
+          Rscript -e "library(styler); style_dir()"
+        shell: bash
 
       - name: Commit and Push formatted files
         run: |
-          git config --global user.name 'github-actions'
+          git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions@github.com'
-          git fetch --all
-          git checkout "${{ github.ref_name }}" || git checkout -b "${{ github.ref_name }}"
           git add .
           git commit -m "Auto-format R code using styler" || echo "No changes to commit"
-          git pull --rebase origin "${{ github.ref_name }}"   # Ensure we are up-to-date
-          git push origin "${{ github.ref_name }}"
+          # Push the changes back to the gh-pages branch
+          git push --set-upstream origin "${{ github.head_ref }}"
+        shell: bash
