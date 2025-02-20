@@ -20,53 +20,61 @@ ui <- navbarPage(
   # First Tab - Data Viewer
   tabPanel(
     "Domains",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput("product", "Select Product:",
-          choices = "sdtmig",
-          selected = "sdtmig"
-        ),
-        selectInput("endpoint", "Select Endpoint:",
-          choices = c("3-4"),
-          selected = c("3-4")
-        ),
-        tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit"))
-        # actionButton("submit_btn", "Submit")
-      ),
-      mainPanel(
+        fluidRow(
+          column(
+            2,
+            selectInput("product", "Select Product:", choices = "sdtmig", selected = "sdtmig")
+            ),
+          column(
+            2,
+            selectInput("endpoint", "Select Version:", choices = c("3-4"), selected = c("3-4")),
+          ),
+          column(
+            2, br(),
+            tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit")),
+          )
+          ),
+        fluidRow(column(12,
         uiOutput("version_header"), # Placeholder for dynamic h3()
+        )),
+        fluidRow(column(12,
         uiOutput("listofdf"),
-        withSpinner(DTOutput("table"))
-      )
-    )
-  ),
+        )),
+        fluidRow(column(12,
+                        div(
+                          style = "margin-bottom: 90px;", 
+        withSpinner(DTOutput("table")),
+        # Footer fixed at the bottom
+        tags$footer(
+          "Developed by Jagadish Katam",
+          style = "position: fixed; bottom: 0; width: 100%;color: white;
+             padding: 1px; text-align: center; border-top: 1px solid #e7e7e7;"
+        )
+        )
+        )
+  )),
 
   # Second Tab - Controlled Terminology
   tabPanel(
     "Controlled Terminology",
-    sidebarLayout(
-      sidebarPanel(
-        h4("Controlled Terminology Version"),
-        selectInput("ctversion", "Select Version:",
-          choices = "sdtmct-2024-09-27",
-          selected = "sdtmct-2024-09-27"
-        ),
-        tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit"))
-        # actionButton("submit_ctversion", "Submit")
-      ),
-      mainPanel(
         fluidRow(
           column(
-            12,
+            2,
+            selectInput("ctversion", "Select CT Version:", choices = "sdtmct-2024-09-27", selected = "sdtmct-2024-09-27")),
+            column(
+              2, br(),
+            tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit")))),
+            fluidRow(
+              column(6,
             textInput("filter_val", tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')", style = "font-size: 12px; font-weight: bold; color: orange;")),
-          ),
+          )),
           fluidRow(
             column(
-              3,
+              2,
               actionButton("apply_filter", "Apply Filter")
             ),
             column(
-              3,
+              1,
               actionButton("clear_btn", "Clear"),
             )
           ),
@@ -75,14 +83,19 @@ ui <- navbarPage(
               12,
               br(),
               uiOutput("version_ct_header"),
-              
-              withSpinner(DTOutput("ct_table"))
+              div(
+                style = "margin-bottom: 90px;",  
+              withSpinner(DTOutput("ct_table")),
+              # Footer fixed at the bottom
+              tags$footer(
+                "Developed by Jagadish Katam",
+                style = "position: fixed; bottom: 0; width: 100%;color: white;
+             padding: 1px; text-align: center; border-top: 1px solid #e7e7e7;"
+              )
             )
           )
         )
       )
-    )
-  )
 )
 
 
