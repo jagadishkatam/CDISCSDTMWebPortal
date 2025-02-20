@@ -251,18 +251,16 @@ server <- function(input, output, session) {
 
   # Render DataTable for Data Viewer
   output$table <- renderDT({
-
     datatable(
       filtered_data(),
       filter = "top",
       options = list(
         pageLength = 10,
         scrollY = 300,
-        deferRender= TRUE,
+        deferRender = TRUE,
         scrollCollapse = TRUE
       )
     )
-    
   })
 
 
@@ -380,11 +378,10 @@ server <- function(input, output, session) {
       options = list(
         pageLength = 10,
         scrollY = 300,
-        deferRender= TRUE,
+        deferRender = TRUE,
         scrollCollapse = TRUE
       )
     )
-    
   })
 
   # Apply filter when the Apply Filter button is clicked
