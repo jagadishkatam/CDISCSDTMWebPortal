@@ -5,6 +5,7 @@ on:
     # Trigger when a pull request is opened or updated targeting main
     branches:
       - main
+
     # (Optionally, you could restrict to certain PR types, e.g., opened, synchronize)
     types: [opened, synchronize]
 
