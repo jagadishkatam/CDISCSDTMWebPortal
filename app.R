@@ -18,7 +18,7 @@ ui <- tagList(
       primary = "#12a79d"
     ),
     "CDISC SDTM-IG Web Portal",
-    
+
     # First Tab - Data Viewer
     tabPanel(
       "Domains",
@@ -32,7 +32,7 @@ ui <- tagList(
           selectInput("endpoint", "Select Version:", choices = c("3-4"), selected = c("3-4"))
         ),
         column(
-          2, 
+          2,
           br(),
           tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit"))
         )
@@ -46,12 +46,12 @@ ui <- tagList(
       fluidRow(
         # Wrap the table output in a div with bottom margin to avoid overlap with footer
         div(
-          style = "margin-bottom: 50px;",  
+          style = "margin-bottom: 50px;",
           withSpinner(DTOutput("table"))
         )
       )
     ),
-    
+
     # Second Tab - Controlled Terminology
     tabPanel(
       "Controlled Terminology",
@@ -69,9 +69,11 @@ ui <- tagList(
       fluidRow(
         column(
           6,
-          textInput("filter_val", 
-                    tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')", 
-                              style = "font-size: 12px; font-weight: bold; color: orange;")
+          textInput(
+            "filter_val",
+            tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')",
+              style = "font-size: 12px; font-weight: bold; color: orange;"
+            )
           )
         )
       ),
@@ -93,7 +95,7 @@ ui <- tagList(
       )
     )
   ),
-  
+
   # Fixed footer placed outside the navbarPage
   tags$footer(
     "Developed by Jagadish Katam",
@@ -130,7 +132,7 @@ server <- function(input, output, session) {
     selected_version(paste0("v", str_replace_all(input$endpoint, "-", ".")))
   })
 
-  
+
   output$version_header <- renderUI({
     # Check if the submit button has been clicked
     if (is.null(input$submit_btn) || input$submit_btn == 0) {
@@ -220,7 +222,7 @@ server <- function(input, output, session) {
       }) |> arrange(dataset, Ordinal)
 
       dataset_df_reactive(dataset_df)
-      
+
       # print(json_list)  # Debugging: Print API response
     } else {
       print(paste("API request failed with status:", resp_status(resp)))
@@ -229,17 +231,17 @@ server <- function(input, output, session) {
   })
 
   datasetslist <- reactiveVal(NULL)
-  
-  observeEvent(input$submit_btn,{
+
+  observeEvent(input$submit_btn, {
     datasetslist(dataset_df_reactive() |> distinct(dataset) |> pull())
   })
-  
+
   output$listofdf <- renderUI({
     req(dataset_df_reactive())
     dataset_string <- paste(datasetslist(), collapse = ", ")
     h5("List of Datasets:", dataset_string)
   })
-  
+
 
   # Reactive filtered data based on selections
   filtered_data <- reactive({
@@ -267,14 +269,14 @@ server <- function(input, output, session) {
   })
 
   output$version_ct_header <- renderUI({
-    if(is.null(input$submit_ctversion) || input$submit_ctversion==0){
+    if (is.null(input$submit_ctversion) || input$submit_ctversion == 0) {
       h3("SDTM Controlled Terminology")
     } else {
-    h3("SDTM Controlled Terminology as on ", selected_ct_version())
+      h3("SDTM Controlled Terminology as on ", selected_ct_version())
     }
   })
 
-  
+
   # Reactive URL construction
   ct_url_reactive <- reactive({
     req(input$ctversion) # Ensure both values are selected
@@ -344,9 +346,9 @@ server <- function(input, output, session) {
         # Merge codelist details with terms (repeat codelist info for each term)
         bind_cols(ct_codelist_info, terms_df)
       })
-            
+
       ct_codelist_df <<- ct_codelist_df
-      
+
       ct_react_filtered_data(ct_codelist_df)
 
       # print(json_list)  # Debugging: Print API response
@@ -374,7 +376,7 @@ server <- function(input, output, session) {
   # Apply filter when the Apply Filter button is clicked
   observeEvent(input$apply_filter, {
     req(input$filter_val) # Ensure filter input is available
-    
+
     if (!is.null(input$filter_val) && input$filter_val != "") {
       tryCatch(
         {
@@ -394,7 +396,7 @@ server <- function(input, output, session) {
           showNotification("Invalid filter expression", type = "error")
         }
       )
-    } 
+    }
   })
 
   # Clear filter button functionality
