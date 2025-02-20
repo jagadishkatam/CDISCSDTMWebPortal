@@ -43,8 +43,21 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git fetch --all
+    
+          # Check out the current branch (e.g., "6/merge")
           git checkout "${{ github.ref_name }}" || git checkout -b "${{ github.ref_name }}"
+    
           git add .
           git commit -m "Auto-format R code using styler" || echo "No changes to commit"
-          git pull --rebase origin "${{ github.ref_name }}"   # Ensure we are up-to-date
-          git push origin "${{ github.ref_name }}"
+    
+          # Check if the branch exists on remote. If it does, pull it, else skip pull.
+          if git ls-remote --exit-code --heads origin "${{ github.ref_name }}"; then
+          git pull --rebase origin "${{ github.ref_name }}"
+          else
+          echo "Remote branch ${{ github.ref_name }} does not exist yet. Skipping pull."
+          fi
+    
+          # Push the branch (creating it on remote if necessary)
+          git push --set-upstream origin "${{ github.ref_name }}"
+          shell: /usr/bin/bash -e {0}
+
