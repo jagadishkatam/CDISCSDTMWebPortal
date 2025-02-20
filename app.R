@@ -9,82 +9,99 @@ library(shinycssloaders)
 options(shiny.maxRequestSize = 10 * 1024^2)
 
 # UI
-ui <- navbarPage(
-  theme = bs_theme(
-    version = 5,
-    bootswatch = "quartz",
-    primary = "#12a79d"
-  ),
-  "CDISC SDTM-IG Web Portal",
+ui <- tagList(
+  # The main app content wrapped in navbarPage:
+  navbarPage(
+    theme = bs_theme(
+      version = 5,
+      bootswatch = "quartz",
+      primary = "#12a79d"
+    ),
+    "CDISC SDTM-IG Web Portal",
 
-  # First Tab - Data Viewer
-  tabPanel(
-    "Domains",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput("product", "Select Product:",
-          choices = "sdtmig",
-          selected = "sdtmig"
+    # First Tab - Data Viewer
+    tabPanel(
+      "Domains",
+      fluidRow(
+        column(
+          2,
+          selectInput("product", "Select Product:", choices = "sdtmig", selected = "sdtmig")
         ),
-        selectInput("endpoint", "Select Endpoint:",
-          choices = c("3-4"),
-          selected = c("3-4")
+        column(
+          2,
+          selectInput("endpoint", "Select Version:", choices = c("3-4"), selected = c("3-4"))
         ),
-        tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit"))
-        # actionButton("submit_btn", "Submit")
+        column(
+          2,
+          br(),
+          tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_btn", "Submit"))
+        )
       ),
-      mainPanel(
-        uiOutput("version_header"), # Placeholder for dynamic h3()
-        withSpinner(DTOutput("table"))
+      fluidRow(
+        column(12, uiOutput("version_header"))
+      ),
+      fluidRow(
+        column(12, uiOutput("listofdf"))
+      ),
+      fluidRow(
+        # Wrap the table output in a div with bottom margin to avoid overlap with footer
+        div(
+          style = "margin-bottom: 50px;",
+          withSpinner(DTOutput("table"))
+        )
       )
-    )
-  ),
+    ),
 
-  # Second Tab - Controlled Terminology
-  tabPanel(
-    "Controlled Terminology",
-    sidebarLayout(
-      sidebarPanel(
-        h4("Terminology Reference"),
-        helpText("This section provides controlled terminologies used in the dataset."),
-        selectInput("ctversion", "Select Product:",
-          choices = "sdtmct-2024-09-27",
-          selected = "sdtmct-2024-09-27"
+    # Second Tab - Controlled Terminology
+    tabPanel(
+      "Controlled Terminology",
+      fluidRow(
+        column(
+          2,
+          selectInput("ctversion", "Select CT Version:", choices = "sdtmct-2024-09-27", selected = "sdtmct-2024-09-27")
         ),
-        tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit"))
-        # actionButton("submit_ctversion", "Submit")
+        column(
+          2,
+          br(),
+          tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_ctversion", "Submit"))
+        )
       ),
-      mainPanel(
-        fluidRow(
-          column(
-            12,
-            textInput("filter_val", tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')", style = "font-size: 12px; font-weight: bold; color: orange;")),
-          ),
-          fluidRow(
-            column(
-              3,
-              actionButton("apply_filter", "Apply Filter")
-            ),
-            column(
-              3,
-              actionButton("clear_btn", "Clear"),
+      fluidRow(
+        column(
+          6,
+          textInput(
+            "filter_val",
+            tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')",
+              style = "font-size: 12px; font-weight: bold; color: orange;"
             )
-          ),
-          fluidRow(
-            column(
-              12,
-              br(),
-              uiOutput("version_ct_header"),
-              withSpinner(DTOutput("ct_table"))
-            )
+          )
+        )
+      ),
+      fluidRow(
+        column(2, actionButton("apply_filter", "Apply Filter")),
+        column(1, actionButton("clear_btn", "Clear"))
+      ),
+      fluidRow(
+        column(
+          12,
+          br(),
+          uiOutput("version_ct_header"),
+          # Add margin-bottom to avoid footer overlap
+          div(
+            style = "margin-bottom: 50px;",
+            withSpinner(DTOutput("ct_table"))
           )
         )
       )
     )
+  ),
+
+  # Fixed footer placed outside the navbarPage
+  tags$footer(
+    "Developed by Jagadish Katam",
+    style = "position: fixed; bottom: 0; width: 100%; color: white; padding: 1px; text-align: right; border-top: 1px solid #e7e7e7;"
   )
 )
-
-
 
 # Server
 server <- function(input, output, session) {
@@ -115,9 +132,16 @@ server <- function(input, output, session) {
     selected_version(paste0("v", str_replace_all(input$endpoint, "-", ".")))
   })
 
-  # Render the dynamic h3() text
+
   output$version_header <- renderUI({
-    h3("SDTM Implementation Guide", selected_version())
+    # Check if the submit button has been clicked
+    if (is.null(input$submit_btn) || input$submit_btn == 0) {
+      # Initially, display the header without version info
+      h3("SDTM Implementation Guide")
+    } else {
+      # After the button is clicked, display the header with the version
+      h3("SDTM Implementation Guide", selected_version())
+    }
   })
 
   # Reactive URL construction
@@ -206,6 +230,18 @@ server <- function(input, output, session) {
     }
   })
 
+  datasetslist <- reactiveVal(NULL)
+
+  observeEvent(input$submit_btn, {
+    datasetslist(dataset_df_reactive() |> distinct(dataset) |> pull())
+  })
+
+  output$listofdf <- renderUI({
+    req(dataset_df_reactive())
+    dataset_string <- paste(datasetslist(), collapse = ", ")
+    h5("List of Datasets:", dataset_string)
+  })
+
 
   # Reactive filtered data based on selections
   filtered_data <- reactive({
@@ -233,8 +269,13 @@ server <- function(input, output, session) {
   })
 
   output$version_ct_header <- renderUI({
-    h3("SDTM Controlled Terminology as on ", selected_ct_version())
+    if (is.null(input$submit_ctversion) || input$submit_ctversion == 0) {
+      h3("SDTM Controlled Terminology")
+    } else {
+      h3("SDTM Controlled Terminology as on ", selected_ct_version())
+    }
   })
+
 
   # Reactive URL construction
   ct_url_reactive <- reactive({
@@ -306,6 +347,8 @@ server <- function(input, output, session) {
         bind_cols(ct_codelist_info, terms_df)
       })
 
+      ct_codelist_df <<- ct_codelist_df
+
       ct_react_filtered_data(ct_codelist_df)
 
       # print(json_list)  # Debugging: Print API response
@@ -359,7 +402,7 @@ server <- function(input, output, session) {
   # Clear filter button functionality
   observeEvent(input$clear_btn, {
     updateTextInput(session, "filter_val", value = "") # Reset filter input
-    ct_react_filtered_data() # Reset to original data
+    ct_react_filtered_data(ct_codelist_df) # Reset to original data
   })
 }
 
