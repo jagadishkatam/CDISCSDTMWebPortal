@@ -163,9 +163,9 @@ ui <- tagList(
         )
       )
     )
-    
-    
-    ),
+
+  ),
+
 
   # Fixed footer placed outside the navbarPage
   tags$footer(
@@ -210,7 +210,7 @@ server <- function(input, output, session) {
       h3("SDTM Implementation Guide", selected_version())
     }
   })
-  
+
 
   # Reactive URL construction
   url_reactive <- reactive({
@@ -497,42 +497,43 @@ server <- function(input, output, session) {
     updateTextInput(session, "filter_val", value = "") # Reset filter input
     ct_react_filtered_data(ct_codelist_df) # Reset to original data
   })
-  
+
   
 
 # ADaM --------------------------------------------------------------------
 
-  
-  
   endpoint_adam_df <- readRDS("./data/adam_endpoint_df_links.rds") |>
     filter(toupper(product) == "ADAM")
-  
-  
+
+
   # Initialize selectInput choices when app starts
   observe({
     updateSelectInput(session, "adam_product", choices = endpoint_adam_df$endpoint, selected = endpoint_adam_df$endpoint[1])
   })
-  
-  adam_endpoint_datasets <-   reactive({
+
+  adam_endpoint_datasets <- reactive({
     req(input$adam_product)
-    endpoint_adam_df |> filter(endpoint==input$adam_product) |> pull(dataset)
+    endpoint_adam_df |>
+      filter(endpoint == input$adam_product) |>
+      pull(dataset)
   })
-  
+
   observe({
-    updateSelectInput(session, "adam_endpoint", 
-                      choices = adam_endpoint_datasets(), 
-                      selected = if(length(adam_endpoint_datasets()) > 0) adam_endpoint_datasets()[1] else NULL)
+    updateSelectInput(session, "adam_endpoint",
+      choices = adam_endpoint_datasets(),
+      selected = if (length(adam_endpoint_datasets()) > 0) adam_endpoint_datasets()[1] else NULL
+    )
   })
-  
+
   # Reactive version value
   selected_adam_version <- reactiveVal(paste0(str_replace_all(endpoint_adam_df$endpoint[1], "-", "."))) # Default
-  
+
   # Update the selected version when the button is clicked
   observeEvent(input$submit_adam_btn, {
     selected_adam_version(paste0(str_replace_all(input$adam_endpoint, "-", ".")))
   })
-  
-  
+
+
   output$version_adam_header <- renderUI({
     # Check if the submit button has been clicked
     if (is.null(input$submit_adam_btn) || input$submit_adam_btn == 0) {
@@ -543,25 +544,25 @@ server <- function(input, output, session) {
       h3("ADaM Implementation Guide", selected_adam_version())
     }
   })
-  
+
   # Reactive URL construction
   url_adam_reactive <- reactive({
     req(input$adam_product, input$adam_endpoint) # Ensure both values are selected
-    paste0("https://api.library.cdisc.org/api/mdr/adam/", input$adam_product,"/datastructures/" ,input$adam_endpoint)
+    paste0("https://api.library.cdisc.org/api/mdr/adam/", input$adam_product, "/datastructures/", input$adam_endpoint)
     # print(paste("https://api.library.cdisc.org/api/mdr/adam/", input$adam_product,"/datastructures/" ,input$adam_endpoint))
   }) |>
     bindEvent(input$submit_adam_btn)
-  
-  
+
+
   # dataset_df <- readRDS("./data/dataset_df.rds")
-  
+
   # Store dataset in a reactive value
   adam_dataset_df_reactive <- reactiveVal(NULL) # Initialize as NULL
-  
+
   # Observe when both inputs change and fetch data
   observeEvent(url_adam_reactive(), {
     req(url_adam_reactive()) # Ensure URL is not NULL
-    
+
     # Construct the API request
     req <- request(url_adam_reactive()) %>%
       req_headers(
@@ -569,23 +570,24 @@ server <- function(input, output, session) {
         "api-key" = "ba3d68879a224d8090406948f8155bae",
         "content-type" = "application/json"
       )
-    
+
     # Send the request and fetch response
     resp <- req %>% req_perform()
-    
+
     # resp <- 200
-    
+
     # Check if response is successful
     if (resp_status(resp) == 200) {
       # if (resp == 200) {
       # Parse JSON response
       endpoint <- resp %>% resp_body_json()
-      
-      
+
+
       # endpoint$analysisVariableSets[[1]]$analysisVariables[[1]]$simpleDatatype
-      
+
       adam_df <- map_dfr(seq_along(endpoint$analysisVariableSets), \(x){
         map_dfr(seq_along(endpoint$analysisVariableSets[[x]]$analysisVariables), \(j){
+
           tibble(analysisdataset=input$adam_endpoint,
                   name = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$name,
                  label = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$label,
@@ -602,17 +604,16 @@ server <- function(input, output, session) {
       }) |> rename_all(toupper)
       
       adam_dataset_df_reactive(adam_df)
-      
+
       # print(json_list)  # Debugging: Print API response
     } else {
       print(paste("API request failed with status:", resp_status(resp)))
       adam_dataset_df_reactive(NULL) # Reset the dataset on failure
     }
   })
-  
+
   # Render DataTable for Data Viewer
   output$adam_table <- renderDT({
-    
     datatable(
       adam_dataset_df_reactive(),
       filter = "top",
@@ -620,13 +621,12 @@ server <- function(input, output, session) {
         pageLength = 10,
         scrollX =  TRUE,
         scrollY = 300,
-        deferRender= TRUE,
+        deferRender = TRUE,
         scrollCollapse = TRUE
       )
     )
-    
   })
-  
+
 
 # ADaM CT -----------------------------------------------------------------
 
