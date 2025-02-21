@@ -17,11 +17,11 @@ ui <- tagList(
       bootswatch = "quartz",
       primary = "#12a79d"
     ),
-    "CDISC SDTM-IG Web Portal",
+    "CDISC Library Web Portal",
 
     # First Tab - Data Viewer
     tabPanel(
-      "Domains",
+      "SDTM-IG",
       fluidRow(
         column(
           2,
@@ -54,7 +54,7 @@ ui <- tagList(
 
     # Second Tab - Controlled Terminology
     tabPanel(
-      "Controlled Terminology",
+      "SDTM Controlled Terminology",
       fluidRow(
         column(
           2,
@@ -95,7 +95,7 @@ ui <- tagList(
       )
     ),
     tabPanel(
-      "ADaM",
+      "ADaM-IG",
       fluidRow(
         column(
           2,
@@ -121,19 +121,65 @@ ui <- tagList(
           withSpinner(DTOutput("adam_table"))
         )
       )
+    ),
+    tabPanel(
+      "ADaM Controlled Terminology",
+      fluidRow(
+        column(
+          2,
+          selectInput("adamctversion", "Select CT Version:", choices = "adamct-2024-09-27", selected = "adamct-2024-09-27")
+        ),
+        column(
+          2,
+          br(),
+          tagAppendAttributes(onclick = "alert('Button clicked!');", actionButton("submit_adamctversion", "Submit"))
+        )
+      ),
+      fluidRow(
+        column(
+          6,
+          textInput(
+            "filter_adamval",
+            tags$span("Filter Expression (e.g., Age > 30 & Gender == 'M')",
+                      style = "font-size: 12px; font-weight: bold; color: orange;"
+            )
+          )
+        )
+      ),
+      fluidRow(
+        column(2, actionButton("apply_adamfilter", "Apply Filter")),
+        column(1, actionButton("clear_adambtn", "Clear"))
+      ),
+      fluidRow(
+        column(
+          12,
+          br(),
+          uiOutput("version_adamct_header"),
+          # Add margin-bottom to avoid footer overlap
+          div(
+            style = "margin-bottom: 50px;",
+            withSpinner(DTOutput("adamct_table"))
+          )
+        )
+      )
     )
+    
     
     ),
 
   # Fixed footer placed outside the navbarPage
   tags$footer(
     "Developed by Jagadish Katam",
-    style = "position: fixed; bottom: 0; width: 100%; color: white; padding: 1px; text-align: right; border-top: 1px solid #e7e7e7;"
+    style = "position: fixed; bottom: 0; width: 100%; color: white; padding: 1px; text-align: center; border-top: 1px solid #e7e7e7;"
   )
 )
 
 # Server
 server <- function(input, output, session) {
+
+# SDTM IG -----------------------------------------------------------------
+
+  
   endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
     filter(toupper(product) == "SDTMIG") |>
     mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[4]))
@@ -144,16 +190,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "endpoint", choices = endpoint_df$end, selected = endpoint_df$end[1])
   })
 
-  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
-    filter(toupper(product) == "CT" & str_detect(endpoint, "sdtmct")) |>
-    mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[5])) |>
-    arrange(desc(end))
-
-  observe({
-    updateSelectInput(session, "ctversion", choices = ct_endpoint_df$end, selected = ct_endpoint_df$end[1])
-  })
-
-
+ 
   # Reactive version value
   selected_version <- reactiveVal(paste0("v", str_replace_all(endpoint_df$end[1], "-", "."))) # Default
 
@@ -238,19 +275,20 @@ server <- function(input, output, session) {
 
             data.frame(
               dataset = dataset$name,
-              Ordinal = as.numeric(var$ordinal) %||% NA,
-              Name = var$name %||% NA,
-              Label = var$label %||% NA,
-              Description = var$description %||% NA,
-              Datatype = var$simpleDatatype %||% NA,
-              Role = var$role %||% NA,
-              core = var$core %||% NA,
+             
+              Name = if (is.null(var$name)) NA else var$name,
+              Label = if (is.null(var$label)) NA else var$label,
+              Description = if (is.null(var$description)) NA else var$description,
+              Datatype = if (is.null(var$simpleDatatype)) NA else var$simpleDatatype,
+              Role = if (is.null(var$role)) NA else var$role ,
+              core = if (is.null(var$core)) NA else var$core ,
               Codelist = stringr::str_extract(href_value, "C\\d+$"),
+              Ordinal = if (is.null(var$ordinal)) NA else as.numeric(var$ordinal),
               stringsAsFactors = FALSE
             )
           })
         })
-      }) |> arrange(dataset, Ordinal)
+      }) |> arrange(dataset, Ordinal) |> rename_all(toupper)
 
       dataset_df_reactive(dataset_df)
 
@@ -264,7 +302,7 @@ server <- function(input, output, session) {
   datasetslist <- reactiveVal(NULL)
 
   observeEvent(input$submit_btn, {
-    datasetslist(dataset_df_reactive() |> distinct(dataset) |> pull())
+    datasetslist(dataset_df_reactive() |> distinct(DATASET) |> pull())
   })
 
   output$listofdf <- renderUI({
@@ -294,6 +332,18 @@ server <- function(input, output, session) {
     )
   })
 
+# SDTM CT -----------------------------------------------------------------
+
+
+  
+  ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
+    filter(toupper(product) == "CT" & str_detect(endpoint, "sdtmct")) |>
+    mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[5])) |>
+    arrange(desc(end))
+  
+  observe({
+    updateSelectInput(session, "ctversion", choices = ct_endpoint_df$end, selected = ct_endpoint_df$end[1])
+  })
 
   selected_ct_version <- reactiveVal(format(as.Date(str_extract(ct_endpoint_df$end[1], "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
 
@@ -377,7 +427,7 @@ server <- function(input, output, session) {
         })
 
         # Merge codelist details with terms (repeat codelist info for each term)
-        bind_cols(ct_codelist_info, terms_df)
+        bind_cols(ct_codelist_info, terms_df) |> rename_all(toupper)
       })
 
       ct_codelist_df <<- ct_codelist_df
@@ -408,6 +458,7 @@ server <- function(input, output, session) {
       filter = "top",
       options = list(
         pageLength = 10,
+        scrollX =  TRUE,
         scrollY = 300,
         deferRender = TRUE,
         scrollCollapse = TRUE
@@ -448,6 +499,9 @@ server <- function(input, output, session) {
   })
   
   
+
+# ADaM --------------------------------------------------------------------
+
   
   
   endpoint_adam_df <- readRDS("./data/adam_endpoint_df_links.rds") |>
@@ -532,16 +586,20 @@ server <- function(input, output, session) {
       
       adam_df <- map_dfr(seq_along(endpoint$analysisVariableSets), \(x){
         map_dfr(seq_along(endpoint$analysisVariableSets[[x]]$analysisVariables), \(j){
-          tibble(name = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$name,
+          tibble(analysisdataset=input$adam_endpoint,
+                  name = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$name,
                  label = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$label,
                  description = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$description,
                  core = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$core,
                  simpleDatatype = endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$simpleDatatype,
-                 ordinal = endpoint$analysisVariableSets[[x]]$ordinal,
+                 # ordinal = endpoint$analysisVariableSets[[x]]$ordinal,
                  analysisVariableSets = endpoint$analysisVariableSets[[x]]$name,
-                 analysisdataset=input$adam_endpoint)
+                 
+                 codelist = if (length(str_extract(endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$`_links`$codelist[[1]]$href, "C.*")) == 0) NA_character_ 
+                 else str_extract(endpoint$analysisVariableSets[[x]]$analysisVariables[[j]]$`_links`$codelist[[1]]$href, "C.*")
+                 )
         })
-      })
+      }) |> rename_all(toupper)
       
       adam_dataset_df_reactive(adam_df)
       
@@ -560,6 +618,7 @@ server <- function(input, output, session) {
       filter = "top",
       options = list(
         pageLength = 10,
+        scrollX =  TRUE,
         scrollY = 300,
         deferRender= TRUE,
         scrollCollapse = TRUE
@@ -567,6 +626,174 @@ server <- function(input, output, session) {
     )
     
   })
+  
+
+# ADaM CT -----------------------------------------------------------------
+
+  
+  
+  adam_ct_endpoint_df <- readRDS("./data/endpoint_df_links.rds") |>
+    filter(toupper(product) == "CT" & str_detect(endpoint, "adamct")) |>
+    mutate(end = sapply(strsplit(.data[["endpoint"]], "/"), \(x) x[5])) |>
+    arrange(desc(end))
+  
+  observe({
+    updateSelectInput(session, "adamctversion", choices = adam_ct_endpoint_df$end, selected = adam_ct_endpoint_df$end[1])
+  })
+  
+  selected_adamct_version <- reactiveVal(format(as.Date(str_extract(adam_ct_endpoint_df$end[1], "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
+  
+  observeEvent(input$submit_adamctversion, {
+    selected_ct_version(format(as.Date(str_extract(input$ctversion, "\\d{4}-\\d{2}-\\d{2}")), "%d-%b-%Y"))
+  })
+  
+  output$version_adamct_header <- renderUI({
+    if (is.null(input$submit_adamctversion) || input$submit_adamctversion == 0) {
+      h3("ADaM Controlled Terminology")
+    } else {
+      h3("ADaM Controlled Terminology as on ", selected_adamct_version())
+    }
+  })
+  
+  
+  # Reactive URL construction
+  adamct_url_reactive <- reactive({
+    req(input$adamctversion) # Ensure both values are selected
+    paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$adamctversion, sep = "/")
+    print(paste("https://api.library.cdisc.org/api/mdr/ct/packages", input$adamctversion, sep = "/"))
+  }) |>
+    bindEvent(input$submit_adamctversion)
+  
+  # Store dataset in a reactive value
+  adamct_react_filtered_data <- reactiveVal(NULL) # Initialize as NULL
+  
+  # Observe when both inputs change and fetch data
+  observeEvent(adamct_url_reactive(), {
+    req(adamct_url_reactive()) # Ensure URL is not NULL
+    
+    # Construct the API request
+    ctreq <- request(adamct_url_reactive()) %>%
+      req_headers(
+        "Cache-Control" = "no-cache",
+        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "content-type" = "application/json"
+      )
+    
+    # Send the request and fetch response
+    ctresp <- ctreq %>% req_perform()
+    
+    # Check if response is successful
+    if (resp_status(ctresp) == 200) {
+      # Parse JSON response
+      ct_list <- ctresp %>% resp_body_json()
+      
+      
+      # Get length of codelists
+      codelist_count <- length(ct_list$codelists)
+      
+      # Convert all nested lists into a data frame
+      adamct_codelist_df <- map_dfr(1:codelist_count, function(i) {
+        # Extract current codelist
+        ctcodelist <- ct_list$codelists[[i]]
+        
+        # Extract codelist-level details
+        ct_codelist_info <- data.frame(
+          codelist = ctcodelist$conceptId %||% NA,
+          definition = ctcodelist$definition %||% NA,
+          extensible = ctcodelist$extensible %||% NA,
+          name = ctcodelist$name %||% NA,
+          nci_preferred_Term = ctcodelist$preferredTerm %||% NA,
+          submission_Value = ctcodelist$submissionValue %||% NA,
+          stringsAsFactors = FALSE
+        )
+        
+        # Get length of terms
+        terms_count <- length(ctcodelist$terms)
+        
+        # Extract term-level details (if available)
+        terms_df <- map_dfr(1:terms_count, function(j) {
+          term <- ctcodelist$terms[[j]]
+          data.frame(
+            term = term$conceptId %||% NA,
+            term_definition = term$definition %||% NA,
+            term_nci_preferred_Term = term$preferredTerm %||% NA,
+            term_submission_Value = term$submissionValue %||% NA,
+            stringsAsFactors = FALSE
+          )
+        })
+        
+        # Merge codelist details with terms (repeat codelist info for each term)
+        bind_cols(ct_codelist_info, terms_df) |> rename_all(toupper)
+      })
+      
+      adamct_codelist_df <<- adamct_codelist_df
+      
+      adamct_react_filtered_data(adamct_codelist_df)
+      
+      # print(json_list)  # Debugging: Print API response
+    } else {
+      print(paste("API request failed with status:", resp_status(ctresp)))
+      adamct_react_filtered_data(NULL) # Reset the dataset on failure
+    }
+  })
+  
+  
+  
+  
+  # ct_codelist_df <- readRDS("./data/ct_codelist_df.rds")
+  
+  
+  # Reactive value to store filtered data, initially the full data
+  # ct_react_filtered_data <- reactiveVal(ct_codelist_df) # Start with the original data
+  
+  # Render the DataTable (shows either full or filtered data)
+  output$adamct_table <- renderDT({
+    req(adamct_react_filtered_data()) # Ensure we have data before rendering
+    datatable(
+      adamct_react_filtered_data(),
+      filter = "top",
+      options = list(
+        pageLength = 10,
+        scrollX =  TRUE,
+        scrollY = 300,
+        deferRender = TRUE,
+        scrollCollapse = TRUE
+      )
+    )
+  })
+  
+  # Apply filter when the Apply Filter button is clicked
+  observeEvent(input$apply_adamfilter, {
+    req(input$filter_adamval) # Ensure filter input is available
+    
+    if (!is.null(input$filter_adamval) && input$filter_adamval != "") {
+      tryCatch(
+        {
+          # Parse and apply the filter expression dynamically
+          filter_expr <- input$filter_adamval
+          filtered_data <- adamct_react_filtered_data() %>% filter(eval(parse(text = filter_expr)))
+          
+          # Check if filtered data is a valid data frame
+          if (is.data.frame(filtered_data)) {
+            adamct_react_filtered_data(filtered_data) # Update the reactive value
+          } else {
+            showNotification("No rows match the filter", type = "warning")
+          }
+        },
+        error = function(e) {
+          # Handle invalid filter expression
+          showNotification("Invalid filter expression", type = "error")
+        }
+      )
+    }
+  })
+  
+  # Clear filter button functionality
+  observeEvent(input$clear_adambtn, {
+    updateTextInput(session, "filter_adamval", value = "") # Reset filter input
+    adamct_react_filtered_data(adamct_codelist_df) # Reset to original data
+  })
+  
   
 }
 
