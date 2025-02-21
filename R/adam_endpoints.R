@@ -41,10 +41,6 @@ adam_links <- adam |>
   left_join(link, join_by(endpoint)) |>
   mutate(
     endpoint = sapply(strsplit(endpoint, "/"), \(x) x[4])
-
   )
 
-saveRDS(adam_links,"./data/adam_endpoint_df_links.rds")
-
-
-
+saveRDS(adam_links, "./data/adam_endpoint_df_links.rds")
