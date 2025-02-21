@@ -37,9 +37,14 @@ jobs:
           any::jsonlite
           any::httr2
           
-    - name: Run R script
+    - name: Run R script endpoint.R
       run: |
         Rscript ./R/endpoint.R  # Run the R script located in the root directory
+        
+    - name: Run R script adam_endpoint.R
+      run: |
+        Rscript ./R/adam_endpoint.R  # Run the R script located in the root directory
+        
     - name: Commit results
       run: |
         git config --local user.email "actions@github.com"
