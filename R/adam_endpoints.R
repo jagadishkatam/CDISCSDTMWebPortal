@@ -9,7 +9,7 @@ adam <- readRDS("./data/endpoint_df_links.rds") |> filter(str_detect(endpoint, "
 link <- map_dfr(adam$endpoint, \(x){
   # API URL
   url <- paste0("https://api.library.cdisc.org/api", x, "/datastructures")
-  print(url)
+  # print(url)
   # Construct the request
   req <- request(url) %>%
     req_headers(
@@ -42,6 +42,5 @@ adam_links <- adam |>
   mutate(
     endpoint = sapply(strsplit(endpoint, "/"), \(x) x[4])
   )
-
 
 saveRDS(adam_links, "./data/adam_endpoint_df_links.rds")
