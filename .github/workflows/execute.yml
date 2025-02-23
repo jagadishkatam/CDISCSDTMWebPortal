@@ -41,7 +41,7 @@ jobs:
       run: |
         Rscript ./R/endpoint.R  # Run the R script located in the root directory
         
-    - name: Run R script adam_endpoint.R
+    - name: Run R script adam_endpoints.R
       run: |
         Rscript ./R/adam_endpoint.R  # Run the R script located in the root directory
         
