@@ -43,7 +43,7 @@ jobs:
         
     - name: Run R script adam_endpoints.R
       run: |
-        Rscript ./R/adam_endpoint.R  # Run the R script located in the root directory
+        Rscript ./R/adam_endpoints.R  # Run the R script located in the root directory
         
     - name: Commit results
       run: |
