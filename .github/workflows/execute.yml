@@ -4,7 +4,9 @@ on:
   schedule:
     - cron: '15 05 * * *'
     # This schedules the job to run daily at midnight UTC
-    
+  push:
+    branches:
+     - main
     
 jobs:
   run-r-script:
