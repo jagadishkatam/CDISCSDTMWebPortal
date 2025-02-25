@@ -3,7 +3,7 @@ library(DT)
 library(httr2)
 library(jsonlite)
 
-
+api_key <- Sys.getenv("API_KEY")
 # API URL
 url <- "https://api.library.cdisc.org/api/mdr/products"
 
@@ -11,7 +11,7 @@ url <- "https://api.library.cdisc.org/api/mdr/products"
 req <- request(url) %>%
   req_headers(
     "Cache-Control" = "no-cache",
-    "api-key" = "ba3d68879a224d8090406948f8155bae",
+    "api-key" = api_key,
     "content-type" = "application/json"
   )
 
