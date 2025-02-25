@@ -3,6 +3,9 @@ library(DT)
 library(httr2)
 library(jsonlite)
 
+
+api_key <- Sys.getenv("API_KEY")
+
 adam <- readRDS("./data/endpoint_df_links.rds") |> filter(str_detect(endpoint, "adam") & str_detect(type, "Guide"))
 
 
@@ -14,7 +17,7 @@ link <- map_dfr(adam$endpoint, \(x){
   req <- request(url) %>%
     req_headers(
       "Cache-Control" = "no-cache",
-      "api-key" = "ba3d68879a224d8090406948f8155bae",
+      "api-key" = api_key,
       "content-type" = "application/json"
     )
 
