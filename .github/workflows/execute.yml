@@ -2,7 +2,7 @@ name: Run R Script on Schedule
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '00 4 * * *'
     # This schedules the job to run daily at midnight UTC
   push:
     branches:
@@ -55,4 +55,4 @@ jobs:
         git config --local user.name "GitHub Actions"
         git add .
         git commit -m 'Data updated' || echo "No changes to commit"
-        git push -u origin main
+        git push
