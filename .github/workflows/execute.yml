@@ -2,7 +2,7 @@ name: Run R Script on Schedule
 
 on:
   schedule:
-    - cron: '45 04 * * *'
+    - cron: '*/10 * * * *'
     # This schedules the job to run daily at midnight UTC
   push:
     branches:
