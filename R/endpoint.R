@@ -4,6 +4,9 @@ library(httr2)
 library(jsonlite)
 
 api_key <- Sys.getenv("API_KEY")
+
+cat("API token: ", Sys.getenv("API_KEY"))  # Temporarily for debugging (remove later)
+
 # API URL
 url <- "https://api.library.cdisc.org/api/mdr/products"
 
