@@ -5,6 +5,10 @@ library(jsonlite)
 library(tidyverse)
 library(bslib)
 library(shinycssloaders)
+library(dotenv)
+
+if (file.exists(".Renviron")) readRenviron(".Renviron")
+if (file.exists(".env"))      dotenv::load_dot_env(".env")   # local only
 
 options(shiny.maxRequestSize = 10 * 1024^2)
 
@@ -231,7 +235,7 @@ server <- function(input, output, session) {
     req <- request(url_reactive()) %>%
       req_headers(
         "Cache-Control" = "no-cache",
-        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "api-key" = api_key,
         "content-type" = "application/json"
       )
 
@@ -378,7 +382,7 @@ server <- function(input, output, session) {
     ctreq <- request(ct_url_reactive()) %>%
       req_headers(
         "Cache-Control" = "no-cache",
-        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "api-key" = api_key,
         "content-type" = "application/json"
       )
 
@@ -566,7 +570,7 @@ server <- function(input, output, session) {
     req <- request(url_adam_reactive()) %>%
       req_headers(
         "Cache-Control" = "no-cache",
-        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "api-key" = api_key,
         "content-type" = "application/json"
       )
 
@@ -676,7 +680,7 @@ server <- function(input, output, session) {
     ctreq <- request(adamct_url_reactive()) %>%
       req_headers(
         "Cache-Control" = "no-cache",
-        "api-key" = "ba3d68879a224d8090406948f8155bae",
+        "api-key" = api_key,
         "content-type" = "application/json"
       )
 

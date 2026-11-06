@@ -3,7 +3,12 @@ library(DT)
 library(httr2)
 library(jsonlite)
 
+if (file.exists(".Renviron")) readRenviron(".Renviron")
+if (file.exists(".env"))      dotenv::load_dot_env(".env")   # local only
+
 api_key <- Sys.getenv("API_KEY")
+
+message("API_KEY present: ", nzchar(api_key))
 
 cat("API token: ", Sys.getenv("API_KEY"))  # Temporarily for debugging (remove later)
 
